@@ -1,45 +1,24 @@
-# Educational Cybersecurity measures purposes: sanitized for safe sharing, review, and classroom-style inspection of the code here.
-FROM python:3.11-slim-bullseye
+# Fixed for Railway / Docker — no broken apt packages
+FROM python:3.11-slim-bookworm
 
-RUN apt-get update && apt-get install -y \
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PORT=6000
+ENV HEADLESS=true
+ENV NUM_THREADS=5
+
+# Minimal system deps (opencv + torch CPU only need these)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
-    gnupg \
-    unzip \
-    xvfb \
-    libxi6 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxtst6 \
-    libnss3 \
-    libxrandr2 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libgtk-3-0 \
-    libgbm1 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcb-dri3-0 \
-    libgl1-mesa-glx \
+    ca-certificates \
     libglib2.0-0 \
+    libgomp1 \
+    libgl1 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
     && rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
-
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+') \
-    && wget -q -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip" \
-    && unzip -q /tmp/chromedriver.zip -d /usr/bin/ \
-    && mv /usr/bin/chromedriver-linux64/chromedriver /usr/bin/chromedriver \
-    && chmod +x /usr/bin/chromedriver \
-    && rm /tmp/chromedriver.zip
 
 WORKDIR /app
 
@@ -53,13 +32,6 @@ COPY net.pkl .
 COPY start.sh .
 
 RUN chmod +x start.sh
-
-ENV PYTHONUNBUFFERED=1
-ENV HEADLESS=true
-ENV NUM_THREADS=5
-ENV PORT=6000
-ENV CHROME_BIN=/usr/bin/google-chrome
-ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 
 EXPOSE 6000
 
