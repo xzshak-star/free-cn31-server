@@ -1,38 +1,24 @@
-# Fixed for Railway / Docker — no broken apt packages
+# MITZ CN31 — zero-apt Dockerfile (Railway cache-bust + no package failures)
+# Build: docker build -t mitz-cn31 .
 FROM python:3.11-slim-bookworm
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
-ENV PORT=6000
-ENV HEADLESS=true
-ENV NUM_THREADS=5
-
-# Minimal system deps (opencv + torch CPU only need these)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    wget \
-    ca-certificates \
-    libglib2.0-0 \
-    libgomp1 \
-    libgl1 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=6000 \
+    HEADLESS=true \
+    NUM_THREADS=5 \
+    OPENCV_IO_ENABLE_OPENEXR=0
 
 WORKDIR /app
 
+# No apt-get. opencv-python-headless + torch wheels ship their own libs.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
-COPY necap.py .
-COPY yidun_proxyless.py .
-COPY dun163.js .
-COPY net.pkl .
-COPY start.sh .
-
+COPY necap.py yidun_proxyless.py dun163.js net.pkl start.sh ./
 RUN chmod +x start.sh
 
 EXPOSE 6000
-
 CMD ["python", "necap.py"]

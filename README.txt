@@ -1,37 +1,28 @@
-MITZ FREE CN31 — FIXED FOR RAILWAY (2026-09-06)
+MITZ FREE CN31 — V2 ZERO-APT (2026-09-06)
 
-What was broken:
-- Dockerfile used python:3.11-slim-bullseye + package list that fails on current mirrors
-  (libasound2, libgl1-mesa-glx, etc. renamed / removed → apt exit 100)
-- Chrome + chromedriver install was unnecessary (solver is pure torch + execjs, no Selenium)
+Previous build failed because Railway was still running the OLD Dockerfile
+(with libasound2 / libgl1-mesa-glx / xvfb). That layer was cached.
 
-What I fixed:
-1. Base image → python:3.11-slim-bookworm
-2. Only the real system libs needed by opencv-headless + torch
-3. Removed all Chrome / Node / xvfb / selenium packages
-4. requirements.txt cleaned (dropped selenium)
-5. start.sh simplified
-6. railway.json forced to DOCKERFILE builder
-7. nixpacks.toml stripped of chrome
+This version:
+- ZERO apt-get lines (nothing can exit 100)
+- torch CPU wheels only (smaller, no CUDA)
+- opencv-python-headless (no system OpenGL)
+- Force DOCKERFILE builder in railway.json
 
-Deploy on Railway:
-1. Push this folder (or zip) to your GitHub repo
-2. New Railway project → Deploy from GitHub
-3. Settings → Builder = Dockerfile (or leave railway.json)
-4. Variables (optional):
-   PORT=6000
-   NUM_THREADS=5
-   TOKEN_SERVER_URL=https://your-token-server.up.railway.app
-5. Deploy. Health: GET /health
+Deploy steps that actually clear the cache:
+1. Delete the old Railway service OR click "Clear build cache" / redeploy with empty cache
+2. Push this entire folder to the repo (overwrite every file)
+3. In Railway → Settings → Build:
+   - Builder: Dockerfile
+   - Dockerfile path: Dockerfile
+4. Redeploy
 
-Local test:
-  docker build -t mitz-cn31 .
-  docker run -p 6000:6000 mitz-cn31
+Or just create a brand-new Railway project from the same repo.
 
-Endpoints (from necap.py):
+Endpoints stay the same:
   GET  /health
   GET  /api/status
   GET  /api/get-token
   GET  /api/token/bulk?n=5
-  POST /start   {"threads": 8}
+  POST /start  {"threads":8}
   POST /stop
